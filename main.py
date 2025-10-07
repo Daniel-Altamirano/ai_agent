@@ -1,12 +1,11 @@
 import os
 import sys
+from call_function import available_functions
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from google.genai import *
 from prompts import system_prompt
 from functions.get_files_info import *
-
 
 
 def main():
@@ -32,11 +31,6 @@ def main():
 
     messages = [types.Content(role="user", parts=[types.Part(text=user_prompt)]),]
 
-    available_functions = types.Tool(
-        function_declarations=[
-            schema_get_files_info,
-        ]
-    )
    
     def generate_content(client, messages, verbose):
 
