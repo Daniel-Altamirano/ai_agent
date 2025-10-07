@@ -11,3 +11,4 @@ wheels/
 
 # API Key
 .env
+calculator/lorem.txt
