@@ -3,7 +3,10 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from google.genai import *
 from prompts import system_prompt
+from functions.get_files_info import *
+
 
 
 def main():
@@ -28,13 +31,22 @@ def main():
     user_prompt = " ".join(args)
 
     messages = [types.Content(role="user", parts=[types.Part(text=user_prompt)]),]
+
+    available_functions = types.Tool(
+        function_declarations=[
+            schema_get_files_info,
+        ]
+    )
    
     def generate_content(client, messages, verbose):
 
         response = client.models.generate_content(
             model=model_name,
             contents=messages,
-            config=types.GenerateContentConfig(system_instruction=system_prompt),
+            config=types.GenerateContentConfig(
+                tools=[available_functions],
+                system_instruction=system_prompt,
+            ),
         )
 
         if verbose:
@@ -44,6 +56,9 @@ def main():
 
         print("Response:")
         print(response.text)
+        if response.function_calls:
+            for function_call_part in response.function_calls:
+                print(f"Calling function: {function_call_part.name}({function_call_part.args})")
 
     generate_content(client=client, messages=messages, verbose=verbose)
     
