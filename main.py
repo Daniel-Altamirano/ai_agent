@@ -1,8 +1,12 @@
 import os
 import sys
+from call_function import available_functions
+from call_function import call_function
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from prompts import system_prompt
+from functions.get_files_info import *
 
 
 def main():
@@ -22,16 +26,22 @@ def main():
 
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
+    model_name = 'gemini-2.0-flash-001'
 
     user_prompt = " ".join(args)
 
     messages = [types.Content(role="user", parts=[types.Part(text=user_prompt)]),]
-    
+
+   
     def generate_content(client, messages, verbose):
 
         response = client.models.generate_content(
-            model='gemini-2.0-flash-001',
+            model=model_name,
             contents=messages,
+            config=types.GenerateContentConfig(
+                tools=[available_functions],
+                system_instruction=system_prompt,
+            ),
         )
 
         if verbose:
@@ -41,6 +51,15 @@ def main():
 
         print("Response:")
         print(response.text)
+        if response.function_calls:
+            for function_call_part in response.function_calls:
+                #print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+                function_call_result = call_function(function_call_part, verbose)
+                try:
+                    print(f"-> {function_call_result.parts[0].function_response.response}")
+                except Exception as e:
+                    print(f"Error: {e}")
+                    sys.exit(1)
 
     generate_content(client=client, messages=messages, verbose=verbose)
     
